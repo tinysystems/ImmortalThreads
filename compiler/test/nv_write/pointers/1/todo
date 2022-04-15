@@ -1,0 +1,17 @@
+#include "immortality.h"
+
+void aliasing_test() {
+  uint32_t arr[100];
+  uint32_t *arr_i = NULL;
+  uint32_t *p_n = NULL;
+
+  while (1) {
+    arr_i = arr + 1;
+    p_n = arr + 2;
+
+    // How to I know when to use _WR_SELF and when _WR is enough?
+    // Should I pessimistically always use _WR_SELF? Yup, as for now.
+    arr_i[2] = arr[3] + 1;
+    *p_n = arr[2] + 2;
+  }
+}

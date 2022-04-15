@@ -1,0 +1,20 @@
+/**
+ * \test Test case: short-circut evaluation
+ */
+#include "immortality.h"
+
+void test_short_circuit() {
+  uint32_t a = 0;
+  uint32_t b = 1;
+
+  // no need to instrumented
+  a && (b);
+  a++ && (b++);
+  a && (b++);
+  a++ && (b);
+  a++ || (b++);
+  a && (b) && (a++) && (b++);
+  a || b || a++ || b++;
+  a++ && (b++) && (a++) && (b++);
+  a++ || b++ || a++ || b++;
+}
