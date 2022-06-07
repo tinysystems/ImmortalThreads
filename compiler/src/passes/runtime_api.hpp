@@ -2,8 +2,9 @@
  * \file immortal_runtime_api.hpp
  * \brief ImmortalThreads runtime API instrumentation - interface
  *
- * \copyright Copyright 2021 The ImmortalThreads authors. All rights reserved.
- * \license MIT License
+ * \copyright Copyright 2022 The ImmortalThreads authors. All rights reserved.
+ * \license MIT License. See accompanying file LICENSE.txt at
+ * https://github.com/tinysystems/ImmortalThreads/blob/main/LICENSE.txt
  *
  * Wrap elementary syntax construct using the appropriate ImmortalThreads
  * runtime macro APIs
@@ -29,12 +30,7 @@ private:
   void wrap_call(const clang::ast_matchers::MatchFinder::MatchResult &result);
   void wrap_call_with_retval(
       const clang::ast_matchers::MatchFinder::MatchResult &result);
-  void
-  wrap_wr_macro(const clang::ast_matchers::MatchFinder::MatchResult &result);
-  void wrap_wr_self_macro(
-      const clang::ast_matchers::MatchFinder::MatchResult &result);
-  void wrap_return(
-      const clang::ast_matchers::MatchFinder::MatchResult &result);
+  void wrap_return(const clang::ast_matchers::MatchFinder::MatchResult &result);
 };
 } // namespace imtc
 

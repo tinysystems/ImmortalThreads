@@ -2,8 +2,9 @@
  * \file location.hpp
  * \brief SourceLocation related utilities - interface
  *
- * \copyright Copyright 2021 The ImmortalThreads authors. All rights reserved.
- * \license MIT License
+ * \copyright Copyright 2022 The ImmortalThreads authors. All rights reserved.
+ * \license MIT License. See accompanying file LICENSE.txt at
+ * https://github.com/tinysystems/ImmortalThreads/blob/main/LICENSE.txt
  */
 #ifndef IMMORTALC_UTILS_LOCATION_HPP_
 #define IMMORTALC_UTILS_LOCATION_HPP_

@@ -2,8 +2,9 @@
  * \file portable.h
  * \brief Porting layer - interface
  *
- * \copyright Copyright 2021 The ImmortalThreads authors. All rights reserved.
- * \license MIT License
+ * \copyright Copyright 2022 The ImmortalThreads authors. All rights reserved.
+ * \license MIT License. See accompanying file LICENSE.txt at
+ * https://github.com/tinysystems/ImmortalThreads/blob/main/LICENSE.txt
  *
  * This file contains functions that every port shall implement.
  */

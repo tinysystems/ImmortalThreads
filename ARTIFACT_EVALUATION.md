@@ -42,7 +42,8 @@ To upload the firmware into the [MSP430FR5994 LaunchPad Development Kit](https:/
 
 ImmortalThread's code can be built using a preconfigured Docker container, without having to install the toolchain, but requires you to mount the directory of the project into the container.
 
-* [Install Docker Desktop](https://docs.docker.com/get-docker/)
+  * [Install Docker Desktop](https://docs.docker.com/get-docker/)
+
 
 ## Project Layout
 
@@ -335,7 +336,7 @@ To manually instrument the benchmark applications and generate the firmware, fol
 # Assuming you are on the root of the project directory
 $ cd runtime
 # Configure CMake
-$ cmake -H. -Bbuild -DCMAKE_BUILD_TYPE="Debug" -DIMMORTALITY_PORT="msp430"
+$ cmake -DCMAKE_BUILD_TYPE="Debug" -H. -Bbuild -DIMMORTALITY_PORT="msp430"
 # Build the benchmark firmwares
 $ make -C build
 # You can now find the built firmwares in build/bin
@@ -364,7 +365,7 @@ By passing the option `-DIMMORTALITY_TEST_BENCHMARK_EXECUTION_MODE` to `cmake` i
 
 ```sh
 # Run these commands to build the intermittent firmwares
-$ cmake -H. -Bbuild -DCMAKE_BUILD_TYPE="Debug" -DIMMORTALITY_PORT="msp430" -DIMMORTALITY_TEST_BENCHMARK_EXECUTION_MODE="intermittent"
+$ cmake -DCMAKE_BUILD_TYPE="Debug" -H. -Bbuild -DIMMORTALITY_PORT="msp430" -DIMMORTALITY_TEST_BENCHMARK_EXECUTION_MODE="intermittent"
 $ make -C build
 ```
 

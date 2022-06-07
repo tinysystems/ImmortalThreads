@@ -2,8 +2,9 @@
  * \file switch_transformation.hpp
  * \brief Transform switch statement info if/else - interface
  *
- * \copyright Copyright 2021 The ImmortalThreads authors. All rights reserved.
- * \license MIT License
+ * \copyright Copyright 2022 The ImmortalThreads authors. All rights reserved.
+ * \license MIT License. See accompanying file LICENSE.txt at
+ * https://github.com/tinysystems/ImmortalThreads/blob/main/LICENSE.txt
  */
 
 #ifndef IMMORTALC_SWITCH_TRANSFORMATION_HPP_

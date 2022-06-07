@@ -27,6 +27,8 @@ add_executable("${BIN_NAME}"
 	passes/expression_decomposition.cpp
 	passes/force_braces.cpp
 	passes/ternary_decomposition.cpp
+	passes/mem_write/naive.cpp
+	passes/mem_write/basic_block.cpp
 	matchers/matchers.cpp
 	utils/immortal.cpp
 	utils/expr.cpp

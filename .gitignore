@@ -375,3 +375,7 @@ tags
 .project
 build/
 .clangd/
+# Ignore any immortalc output
+*.immortal.c
+# Don't ignore test snapshots
+!compiler/test/**/*.immortal.c

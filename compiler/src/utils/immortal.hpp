@@ -3,8 +3,9 @@
  * \brief Utility functions for working with ImmortalThreads's runtime interface
  * - interface
  *
- * \copyright Copyright 2021 The ImmortalThreads authors. All rights reserved.
- * \license MIT License
+ * \copyright Copyright 2022 The ImmortalThreads authors. All rights reserved.
+ * \license MIT License. See accompanying file LICENSE.txt at
+ * https://github.com/tinysystems/ImmortalThreads/blob/main/LICENSE.txt
  */
 
 #ifndef IMMORTALC_UTILTS_IMMORTAL_HPP_
@@ -55,8 +56,8 @@ std::string get_immortal_function_metadata_definition(
  * \returns the instrumented assignment
  */
 std::string get_immortal_write(const clang::BinaryOperator &assignment,
-                               const clang::SourceManager &manager,
-                               const clang::LangOptions &opts);
+                               const clang::FunctionDecl &immortal_function,
+                               const clang::CompilerInstance &ci);
 
 /**
  * Given an assignment expression to a non-volatile variable, where the
@@ -65,9 +66,22 @@ std::string get_immortal_write(const clang::BinaryOperator &assignment,
  *
  * \returns the instrumented assignment
  */
-std::string get_immortal_write_self(const clang::BinaryOperator &assignment,
-                                    const clang::SourceManager &manager,
-                                    const clang::LangOptions &opts);
+std::string
+get_immortal_write_self(const clang::BinaryOperator &assignment,
+                        const clang::FunctionDecl &immortal_function,
+                        const clang::CompilerInstance &ci);
+
+/**
+ * Given multiple consecutive assignment expressions to non-volatile variables,
+ * where the variable (or its potential alias) appears also on the RHS, return
+ * the instrumented assignments.
+ *
+ * \returns the instrumented assignments
+ */
+std::string get_immortal_coalesced_write_selfs(
+    const std::vector<const clang::BinaryOperator *> assignments,
+    const clang::FunctionDecl &immortal_function,
+    const clang::CompilerInstance &ci);
 
 /**
  * Given an assignment expression to a non-volatile variable, where the
@@ -77,8 +91,8 @@ std::string get_immortal_write_self(const clang::BinaryOperator &assignment,
  */
 std::string
 get_immortal_call_with_retval(const clang::BinaryOperator &assignment,
-                              const clang::SourceManager &manager,
-                              const clang::LangOptions &opts);
+                              const clang::FunctionDecl &immortal_function,
+                              const clang::CompilerInstance &ci);
 
 /**
  * Given a call expression to an immortal function, return the instrumented call
@@ -86,8 +100,8 @@ get_immortal_call_with_retval(const clang::BinaryOperator &assignment,
  * \returns the instrumented assignment
  */
 std::string get_immortal_call(const clang::CallExpr &call_expr,
-                              const clang::SourceManager &manager,
-                              const clang::LangOptions &opts);
+                              const clang::FunctionDecl &immortal_function,
+                              const clang::CompilerInstance &ci);
 
 /**
  * Given a return statement inside an immortal function, return the instrumented
@@ -102,8 +116,7 @@ std::string get_immortal_call(const clang::CallExpr &call_expr,
 std::string
 get_immortal_function_return_stmt(const clang::ReturnStmt &ret_stmt,
                                   const clang::FunctionDecl &immortal_function,
-                                  const clang::SourceManager &manager,
-                                  const clang::LangOptions &opts);
+                                  const clang::CompilerInstance &ci);
 
 /**
  * Given an immortal function, return the begin macro that should be placed at

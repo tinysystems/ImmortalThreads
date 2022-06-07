@@ -2,8 +2,9 @@
  * \file common.h
  * \brief Common utility fucntions and type definitions
  *
- * \copyright Copyright 2021 The ImmortalThreads authors. All rights reserved.
- * \license MIT License
+ * \copyright Copyright 2022 The ImmortalThreads authors. All rights reserved.
+ * \license MIT License. See accompanying file LICENSE.txt at
+ * https://github.com/tinysystems/ImmortalThreads/blob/main/LICENSE.txt
  */
 #ifndef IMMORTALITY_COMMON_H_
 #define IMMORTALITY_COMMON_H_
@@ -21,7 +22,7 @@ typedef struct {
   /**
    * privatization buffer for the _WR_SELF macro
    */
-  uint64_t volatile buffer;
+  uint64_t volatile buffer[IMMORTALITY_PRIVATIZATION_BUFFER_COUNT];
 } privatization_buffer_t;
 
 /**

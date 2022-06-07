@@ -2,19 +2,16 @@
  * \file immortal_runtime_api.cpp
  * \brief ImmortalThreads runtime API instrumentation - implementation
  *
- * \copyright Copyright 2021 The ImmortalThreads authors. All rights reserved.
- * \license MIT License
+ * \copyright Copyright 2022 The ImmortalThreads authors. All rights reserved.
+ * \license MIT License. See accompanying file LICENSE.txt at
+ * https://github.com/tinysystems/ImmortalThreads/blob/main/LICENSE.txt
  *
  * This pass:
  *
- * * Wraps memory write accesses with ImmortalThreads macros
  * * Wraps function calls with ImmortalThreads macros
  *
  * This pass assumes that:
  *
- * * All memory write accesses are under the form of simple assignment
- * expressions and each such expression resides in a separate expression
- * statement
  * * All function calls resides in a separate expression statement
  */
 #include "runtime_api.hpp"
@@ -33,55 +30,25 @@ using namespace imtc::utils;
 using namespace clang;
 using namespace clang::ast_matchers;
 
-static constexpr char WR_BINDING[] = "wr";
-static constexpr char WR_SELF_BINDING[] = "wr_self";
+static constexpr char IMMORTAL_FUNCTION_DEFINITION[] =
+    "immortal_function_definition";
 static constexpr char CALL_WITH_RETVAL_BINDING[] = "call_with_retval";
 static constexpr char CALL_BINDING[] = "call";
 static constexpr char LOCAL_IMMORTAL_VAR_DECL_STMT[] =
     "local_immortal_var_decl_stmt";
 static constexpr char GLOBAL_IMMORTAL_VAR_DECL[] = "global_immortal_var_decl";
 static constexpr char RETURN_STMT_BINDING[] = "return_stmt";
-static constexpr char RETURN_STMT_IMMORTAL_FUNCTION_PARENT_BINDING[] =
-    "return_stmt_immortal_function_parent";
 
 namespace imtc {
-void ImmortalRuntimeApiPass::wrap_wr_macro(
-    const clang::ast_matchers::MatchFinder::MatchResult &result) {
-  const auto *assignment = result.Nodes.getNodeAs<BinaryOperator>(WR_BINDING);
-  assert(assignment);
-
-  std::string new_source = get_immortal_write(
-      *assignment, *result.SourceManager, result.Context->getLangOpts());
-
-  auto err =
-      this->replace(*result.SourceManager,
-                    CharSourceRange::getTokenRange(assignment->getBeginLoc(),
-                                                   assignment->getEndLoc()),
-                    new_source);
-  assert_no_error(err);
-}
-void ImmortalRuntimeApiPass::wrap_wr_self_macro(
-    const clang::ast_matchers::MatchFinder::MatchResult &result) {
-  const auto *assignment =
-      result.Nodes.getNodeAs<BinaryOperator>(WR_SELF_BINDING);
-  assert(assignment);
-
-  std::string new_source = get_immortal_write_self(
-      *assignment, *result.SourceManager, result.Context->getLangOpts());
-
-  auto err =
-      this->replace(*result.SourceManager,
-                    CharSourceRange::getTokenRange(assignment->getBeginLoc(),
-                                                   assignment->getEndLoc()),
-                    new_source);
-}
-
 void ImmortalRuntimeApiPass::wrap_call(
     const clang::ast_matchers::MatchFinder::MatchResult &result) {
   const auto *call = result.Nodes.getNodeAs<CallExpr>(CALL_BINDING);
+  const auto *fn =
+      result.Nodes.getNodeAs<FunctionDecl>(IMMORTAL_FUNCTION_DEFINITION);
+  assert(fn);
 
-  std::string new_source = get_immortal_call(*call, *result.SourceManager,
-                                             result.Context->getLangOpts());
+  std::string new_source =
+      get_immortal_call(*call, *fn, this->context_.get_current_CI());
 
   auto err = this->replace(
       *result.SourceManager,
@@ -94,9 +61,12 @@ void ImmortalRuntimeApiPass::wrap_call_with_retval(
   const auto *assignment =
       result.Nodes.getNodeAs<BinaryOperator>(CALL_WITH_RETVAL_BINDING);
   assert(assignment);
+  const auto *fn =
+      result.Nodes.getNodeAs<FunctionDecl>(IMMORTAL_FUNCTION_DEFINITION);
+  assert(fn);
 
   std::string new_source = get_immortal_call_with_retval(
-      *assignment, *result.SourceManager, result.Context->getLangOpts());
+      *assignment, *fn, this->context_.get_current_CI());
 
   auto err =
       this->replace(*result.SourceManager,
@@ -127,8 +97,8 @@ void ImmortalRuntimeApiPass::mark_gdef(
 
 void ImmortalRuntimeApiPass::wrap_return(
     const clang::ast_matchers::MatchFinder::MatchResult &result) {
-  const auto *fn_def = result.Nodes.getNodeAs<FunctionDecl>(
-      RETURN_STMT_IMMORTAL_FUNCTION_PARENT_BINDING);
+  const auto *fn_def =
+      result.Nodes.getNodeAs<FunctionDecl>(IMMORTAL_FUNCTION_DEFINITION);
   assert(fn_def);
   const auto *return_stmt =
       result.Nodes.getNodeAs<ReturnStmt>(RETURN_STMT_BINDING);
@@ -138,8 +108,7 @@ void ImmortalRuntimeApiPass::wrap_return(
       result.Context->getSourceManager(),
       CharSourceRange::getTokenRange(return_stmt->getSourceRange()),
       get_immortal_function_return_stmt(*return_stmt, *fn_def,
-                                        result.Context->getSourceManager(),
-                                        result.Context->getLangOpts()));
+                                        this->context_.get_current_CI()));
   assert_no_error(err);
 }
 
@@ -154,32 +123,12 @@ void ImmortalRuntimeApiPass::register_matchers(MatchFinder &finder) {
       hasRHS(anyOf(immortal_function_call_expr(),
                    hasDescendant(immortal_function_call_expr())));
 
-  auto non_volatile_write = for_each_node_inside_immortal_function_definition(
-      assignment_to_non_volatile_var(
-          allOf(anything(), unless(rhs_is_self(NON_VOLATILE_VAR_DECL_BINDING)),
-                unless(rhs_is_immortal_fn_call)))
-          .bind(WR_BINDING));
-  finder.addMatcher(
-      traverse(clang::ast_type_traits::TK_IgnoreUnlessSpelledInSource,
-               non_volatile_write),
-      this);
-
-  auto non_volatile_self_write =
-      for_each_node_inside_immortal_function_definition(
-          assignment_to_non_volatile_var(
-              allOf(rhs_is_self(NON_VOLATILE_VAR_DECL_BINDING),
-                    unless(hasRHS(immortal_function_call_expr()))))
-              .bind(WR_SELF_BINDING));
-  finder.addMatcher(
-      traverse(clang::ast_type_traits::TK_IgnoreUnlessSpelledInSource,
-               non_volatile_self_write),
-      this);
-
   auto immortal_function_call =
       for_each_node_inside_immortal_function_definition(
           immortal_function_call_expr(
               unless(hasAncestor(assignment_operator())))
-              .bind(CALL_BINDING));
+              .bind(CALL_BINDING))
+          .bind(IMMORTAL_FUNCTION_DEFINITION);
   finder.addMatcher(
       traverse(clang::ast_type_traits::TK_IgnoreUnlessSpelledInSource,
                immortal_function_call),
@@ -188,7 +137,8 @@ void ImmortalRuntimeApiPass::register_matchers(MatchFinder &finder) {
   auto non_volatile_write_with_retval =
       for_each_node_inside_immortal_function_definition(
           assignment_to_non_volatile_var(rhs_is_immortal_fn_call)
-              .bind(CALL_WITH_RETVAL_BINDING));
+              .bind(CALL_WITH_RETVAL_BINDING))
+          .bind(IMMORTAL_FUNCTION_DEFINITION);
   finder.addMatcher(
       traverse(clang::ast_type_traits::TK_IgnoreUnlessSpelledInSource,
                non_volatile_write_with_retval),
@@ -205,6 +155,7 @@ void ImmortalRuntimeApiPass::register_matchers(MatchFinder &finder) {
 
   auto non_marked_global_immortal_var_decl =
       immortal_var_decl(hasDeclContext(translationUnitDecl()),
+                        unless(is_located_in_header_file()),
                         // those that haven't been manually marked by
                         // the developer yet
                         unless(hasAttr(clang::attr::Section)))
@@ -217,7 +168,7 @@ void ImmortalRuntimeApiPass::register_matchers(MatchFinder &finder) {
   auto immortal_function_return_stmt =
       for_each_node_inside_immortal_function_definition(
           returnStmt().bind(RETURN_STMT_BINDING))
-          .bind(RETURN_STMT_IMMORTAL_FUNCTION_PARENT_BINDING);
+          .bind(IMMORTAL_FUNCTION_DEFINITION);
 
   finder.addMatcher(
       traverse(clang::ast_type_traits::TK_IgnoreUnlessSpelledInSource,
@@ -227,12 +178,6 @@ void ImmortalRuntimeApiPass::register_matchers(MatchFinder &finder) {
 
 void ImmortalRuntimeApiPass::run(const MatchFinder::MatchResult &result) {
   auto bound_map = result.Nodes.getMap();
-  if (bound_map.count(WR_BINDING)) {
-    this->wrap_wr_macro(result);
-  }
-  if (bound_map.count(WR_SELF_BINDING)) {
-    this->wrap_wr_self_macro(result);
-  }
   if (bound_map.count(CALL_BINDING)) {
     this->wrap_call(result);
   }

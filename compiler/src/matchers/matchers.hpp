@@ -2,8 +2,9 @@
  * \file matchers.hpp
  * \brief Common utility matchers - interface
  *
- * \copyright Copyright 2021 The ImmortalThreads authors. All rights reserved.
- * \license MIT License
+ * \copyright Copyright 2022 The ImmortalThreads authors. All rights reserved.
+ * \license MIT License. See accompanying file LICENSE.txt at
+ * https://github.com/tinysystems/ImmortalThreads/blob/main/LICENSE.txt
  */
 
 #ifndef IMMORTALC_MATCHERS_HPP_
@@ -11,6 +12,7 @@
 
 #include "../context.hpp"
 #include "../utils/immortal.hpp"
+#include "../utils/location.hpp"
 
 #include "clang/ASTMatchers/ASTMatchers.h"
 #include "clang/Lex/Lexer.h"
@@ -91,6 +93,13 @@ AST_MATCHER_P(clang::Decl, neighbors,
   }
 
   return true;
+}
+
+AST_POLYMORPHIC_MATCHER(is_located_in_header_file,
+                        AST_POLYMORPHIC_SUPPORTED_TYPES(clang::VarDecl,
+                                                        clang::FunctionDecl)) {
+  return utils::is_location_in_header_file(
+      Node.getBeginLoc(), Finder->getASTContext().getSourceManager());
 }
 
 AST_POLYMORPHIC_MATCHER(is_declared_in_non_instrumentable_headers,

@@ -2,8 +2,9 @@
  * \file function_copy.hpp
  * \brief Instrument multi-instance immortal functions - interface
  *
- * \copyright Copyright 2021 The ImmortalThreads authors. All rights reserved.
- * \license MIT License
+ * \copyright Copyright 2022 The ImmortalThreads authors. All rights reserved.
+ * \license MIT License. See accompanying file LICENSE.txt at
+ * https://github.com/tinysystems/ImmortalThreads/blob/main/LICENSE.txt
  */
 
 #ifndef IMMORTALC_FUNCTION_COPY_HPP_

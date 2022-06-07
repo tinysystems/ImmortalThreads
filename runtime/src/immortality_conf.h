@@ -1,20 +1,16 @@
 /**
- * \file immortality_config.h
+ * \file immortality_conf.h
  * \brief Internal configuration header of ImmortalThreads
  *
- * \copyright Copyright 2021 The ImmortalThreads authors. All rights reserved.
- * \license MIT License
+ * \copyright Copyright 2022 The ImmortalThreads authors. All rights reserved.
+ * \license MIT License. See accompanying file LICENSE.txt at
+ * https://github.com/tinysystems/ImmortalThreads/blob/main/LICENSE.txt
  *
  * This configuration header is the one that must be used in the
  * ImmortalThreads codebase.
  *
  * This header checks whether the required macro are defined and for some
  * optional macros it sets a default value.
- *
- * The application developer can define the required macro using the appropriate
- * CLI options of the compiler or by defining only the
- * `IMMORTALITY_INCLUDE_CONFIG_H` macro and then defining the remaining macros
- * in the `immortality_config.h` file.
  *
  * For all the configurable options, please look at the documented options
  * in this file.
@@ -27,6 +23,10 @@
 
 #ifndef IMMORTALITY_MAX_THREAD_COUNT
 #define IMMORTALITY_MAX_THREAD_COUNT 1
+#endif
+
+#ifndef IMMORTALITY_PRIVATIZATION_BUFFER_COUNT
+#define IMMORTALITY_PRIVATIZATION_BUFFER_COUNT 3
 #endif
 
 #ifndef IMMORTALITY_PREEMPTION_MS

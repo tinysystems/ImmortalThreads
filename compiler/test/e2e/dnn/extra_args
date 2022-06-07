@@ -1,0 +1,3 @@
+-H
+./includes/dnnlib
+--extra-arg=-I${current_dir}

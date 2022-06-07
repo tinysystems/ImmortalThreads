@@ -36,6 +36,13 @@ $ immortalc test.c --extra-arg=-DMY_DEFINES --extra-arg=-Imy_project/include
 
 For more information, refer to `immortalc --help`.
 
+## Limitations
+
+While `immortalc` (or any other Clang-based tool) makes the best effort to interpret the compiler flags specified in `compile_commands.json`, often there are flags whose "side effect" cannot be reproduced by `immortalc`.
+
+For example, if the compiler that is used in `compile_commands.json` is `msp430-elf-gcc`, you must know that `msp430-elf-gcc` defines the macro `__MSP430__` and also defines some macros based on the value of the option `-mmcu=<value>` (e.g. if `-mmcu=msp430fr5994`, then `-D__MSP430FR5994__` is defined).
+`immortalc` is not able to know from the `compile_commands.json` that it must define these macros when analyzing the source files that are being cross-compiled. So we need to tell `immortalc` to define these macros when instrumenting the cross-compiled source files, via `--extra-arg`. E.g.`immortalc ./main.c --extra-arg=-D__MSP430__ --extra-arg=-D__MSP430FR5994__`.
+
 ## Build
 
 ```sh

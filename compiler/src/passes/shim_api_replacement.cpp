@@ -2,8 +2,9 @@
  * \file shim_api_replacement.cpp
  * \brief Replace shim APIs with true APIs - interface
  *
- * \copyright Copyright 2021 The ImmortalThreads authors. All rights reserved.
- * \license MIT License
+ * \copyright Copyright 2022 The ImmortalThreads authors. All rights reserved.
+ * \license MIT License. See accompanying file LICENSE.txt at
+ * https://github.com/tinysystems/ImmortalThreads/blob/main/LICENSE.txt
  */
 #include "shim_api_replacement.hpp"
 

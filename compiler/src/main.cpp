@@ -2,8 +2,9 @@
  * \file main.cpp
  * \brief Main entrypoint of immortalc
  *
- * \copyright Copyright 2021 The ImmortalThreads authors. All rights reserved.
- * \license MIT License
+ * \copyright Copyright 2022 The ImmortalThreads authors. All rights reserved.
+ * \license MIT License. See accompanying file LICENSE.txt at
+ * https://github.com/tinysystems/ImmortalThreads/blob/main/LICENSE.txt
  */
 
 #include "context.hpp"
@@ -20,6 +21,9 @@
 #include "passes/shim_api_replacement.hpp"
 #include "passes/switch_transformation.hpp"
 #include "passes/ternary_decomposition.hpp"
+
+#include "passes/mem_write/basic_block.hpp"
+#include "passes/mem_write/naive.hpp"
 
 #include "fmt/core.h"
 #include "fmt/ranges.h"
@@ -81,10 +85,31 @@ static cl::opt<bool> g_arg_force_output(
              "to be instrumented, immortalc doesn't output anything or write "
              "to any file."));
 
+static cl::opt<std::string> g_optimize(
+    "optimize", cl::init("forward-progress"), cl::cat(ImmortalcCategory),
+    cl::desc(
+        "In general, the more checkpoints are placed, the less work is wasted "
+        "on power failure, at the cost of higher execution overhead due to "
+        "checkpoints. And, viceversa, fewer checkpoints imply less overhead, "
+        "but more wasted work on power failure. The developer can choose which "
+        "aspect to optimize using the option. The supported values are:\n"
+        "- \"forward-progress\" (default): to place more checkpoints than "
+        "required, to keep forward progress\n"
+        "- \"execution-time\": to place as few checkpoints as possible (while "
+        "ensuring memory consistency), to decrease execution-time\"\n"));
+
 static cl::list<std::string> g_arg_project_header_files_dir(
     "H", cl::cat(ImmortalcCategory),
     cl::desc("List of paths which contain header files that can be "
              "instrumented by immortalc"));
+
+/// A way to simulate a string based enum with namespaces
+/// See https://stackoverflow.com/a/60169407
+namespace optimization_type {
+typedef std::string Type;
+Type FORWARD_PROGRESS = "forward-progress";
+Type EXECUTION_TIME = "execution-time";
+} // namespace optimization_type
 
 /// Apparently the `-p` flag causes cwd to change in some places of the
 /// program. So we need to save the initial cwd.
@@ -257,6 +282,16 @@ int main(int argc, const char **argv) {
   {
     ImmortalcPasses passes;
     passes.push_back(std::make_unique<ImmortalFunctionPass>(context));
+    if (g_optimize == optimization_type::FORWARD_PROGRESS) {
+      passes.push_back(
+          std::make_unique<NaiveMemWriteCheckpointMacrosInsertionPass>(
+              context));
+    } else if (g_optimize == optimization_type::EXECUTION_TIME) {
+      passes.push_back(
+          std::make_unique<
+              MemWriteCheckpointMacrosInsertionPassWithBasicBlockOptimization>(
+              context));
+    }
     passes.push_back(std::make_unique<ImmortalRuntimeApiPass>(context));
     passes.push_back(std::make_unique<ShimApiReplacementPass>(context));
     pass_groups.push_back(std::move(passes));

@@ -1,8 +1,9 @@
-/*
- * dnn_calc.c
+/**
+ * \file dnn_calc.c
  *
- *  Created on: 25 Haz 2020
- *      Author: eren
+ * \copyright Copyright 2022 The ImmortalThreads authors. All rights reserved.
+ * \license MIT License. See accompanying file LICENSE.txt at
+ * https://github.com/tinysystems/ImmortalThreads/blob/main/LICENSE.txt
  */
 #include "immortality.h"
 

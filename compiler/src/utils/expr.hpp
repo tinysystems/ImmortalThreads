@@ -2,8 +2,9 @@
  * \file expr.hpp
  * \brief Common utility related to expressions - interface
  *
- * \copyright Copyright 2021 The ImmortalThreads authors. All rights reserved.
- * \license MIT License
+ * \copyright Copyright 2022 The ImmortalThreads authors. All rights reserved.
+ * \license MIT License. See accompanying file LICENSE.txt at
+ * https://github.com/tinysystems/ImmortalThreads/blob/main/LICENSE.txt
  */
 
 #ifndef IMMORTALC_EXPR_HPP_
@@ -62,6 +63,10 @@ clang::Expr *get_value_of_the_expression(const clang::Expr *expr);
  * Given an expression that "carries" a value, return the type of such value.
  */
 clang::QualType get_type_of_the_expression(const clang::Expr *expr);
+/**
+ * Whether the given expression is a l-value and is a pointer dereference
+ */
+bool is_pointer_dereference_lvalue(const clang::Expr *expr);
 
 } // namespace imtc::utils
 

@@ -1,26 +1,9 @@
-/*
- * MIT License
+/**
+ * \file thread.h
  *
- * Copyright (c) 2020 Eren Yildiz and Kasim Sinan Yildirim
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- *
+ * \copyright Copyright 2022 The ImmortalThreads authors. All rights reserved.
+ * \license MIT License. See accompanying file LICENSE.txt at
+ * https://github.com/tinysystems/ImmortalThreads/blob/main/LICENSE.txt
  */
 
 #ifndef IMMORTALITY_THREAD_H_
@@ -84,7 +67,7 @@
   extern volatile immortal_thread_t *g_imt_priv_current_thread;                \
   static __fram immortal_function_t this = {.cur_line = 0};                    \
   immortal_function_t *pthis = &this;                                          \
-  switch (this.cur_line) {                                                     \
+  switch (pthis->cur_line) {                                                   \
   case 0:
 
 /**
@@ -98,14 +81,95 @@
   case 0:
 
 #define _end(_name_)                                                           \
-  pthis->cur_line = __COUNTER__; /* set line counter to a different value */   \
-  }                              /*  end switch */                             \
-  return pthis;                  /* return the thread structure to the caller */
+  this.cur_line = __COUNTER__; /* set line counter to a different value */     \
+  }                            /*  end switch */                               \
+  return &this;                /* return the thread structure to the caller */
 
 #define _end_multi(_name_)                                                     \
   pthis->cur_line = __COUNTER__; /* set line counter to a different value */   \
   }                              /*  end switch */                             \
   return pthis;                  /* return the thread structure to the caller */
+
+/**
+ * Shim API called by the developer.
+ */
+void CHECKPOINT();
+
+#define _CHECKPOINT()                                                          \
+  pthis->cur_line = __COUNTER__ + 1;                                           \
+  case __COUNTER__:
+
+#define _WR(_arg_, _val_)                                                      \
+  _CHECKPOINT();                                                               \
+  _arg_ = _val_;
+
+#if IMMORTALITY_MAX_THREAD_COUNT == 1
+#define _WR_SELF(_type_, _arg_, _val_)                                         \
+  extern privatization_buffer_t _imt_global_privatization_buffer;              \
+  _CHECKPOINT();                                                               \
+  *((_type_ *)&_imt_global_privatization_buffer.buffer[0]) = _val_;            \
+  _CHECKPOINT();                                                               \
+  _arg_ = *((_type_ *)&_imt_global_privatization_buffer.buffer[0]);
+#define _WR_SELF_CONTEMPORANEOUS_2(_type_, _arg_, _val_, _type1_, _arg1_,      \
+                                   _val1_)                                     \
+  extern privatization_buffer_t _imt_global_privatization_buffer;              \
+  _CHECKPOINT();                                                               \
+  *((_type_ *)&_imt_global_privatization_buffer.buffer[0]) = _val_;            \
+  *((_type1_ *)&_imt_global_privatization_buffer.buffer[1]) = _val1_;          \
+  _CHECKPOINT();                                                               \
+  _arg_ = *((_type_ *)&_imt_global_privatization_buffer.buffer[0]);            \
+  _arg1_ = *((_type1_ *)&_imt_global_privatization_buffer.buffer[1]);
+
+#define _WR_SELF_CONTEMPORANEOUS_3(_type_, _arg_, _val_, _type1_, _arg1_,      \
+                                   _val1_, _type2_, _arg2_, _val2_)            \
+  extern privatization_buffer_t _imt_global_privatization_buffer;              \
+  _CHECKPOINT();                                                               \
+  *((_type_ *)&_imt_global_privatization_buffer.buffer[0]) = _val_;            \
+  *((_type1_ *)&_imt_global_privatization_buffer.buffer[1]) = _val1_;          \
+  *((_type2_ *)&_imt_global_privatization_buffer.buffer[2]) = _val2_;          \
+  _CHECKPOINT();                                                               \
+  _arg_ = *((_type_ *)&_imt_global_privatization_buffer.buffer[0]);            \
+  _arg1_ = *((_type1_ *)&_imt_global_privatization_buffer.buffer[1]);          \
+  _arg2_ = *((_type2_ *)&_imt_global_privatization_buffer.buffer[2]);
+
+#else
+#define _WR_SELF(_type_, _arg_, _val_)                                         \
+  _CHECKPOINT();                                                               \
+  *((_type_ *)&(g_imt_priv_current_thread->privatization_buffer.buffer[0])) =  \
+      _val_;                                                                   \
+  _CHECKPOINT();                                                               \
+  _arg_ = *(                                                                   \
+      (_type_ *)&(g_imt_priv_current_thread->privatization_buffer.buffer[0]));
+#define _WR_SELF_CONTEMPORANEOUS_2(_type_, _arg_, _val_, _type1_, _arg1_,      \
+                                   _val1_)                                     \
+  _CHECKPOINT();                                                               \
+  *((_type_ *)&g_imt_priv_current_thread->privatization_buffer.buffer[0]) =    \
+      _val_;                                                                   \
+  *((_type1_ *)&g_imt_priv_current_thread->privatization_buffer.buffer[1]) =   \
+      _val1_;                                                                  \
+  _CHECKPOINT();                                                               \
+  _arg_ =                                                                      \
+      *((_type_ *)&g_imt_priv_current_thread->privatization_buffer.buffer[0]); \
+  _arg1_ = *(                                                                  \
+      (_type1_ *)&g_imt_priv_current_thread->privatization_buffer.buffer[1]);
+
+#define _WR_SELF_CONTEMPORANEOUS_3(_type_, _arg_, _val_, _type1_, _arg1_,      \
+                                   _val1_, _type2_, _arg2_, _val2_)            \
+  _CHECKPOINT();                                                               \
+  *((_type_ *)&g_imt_priv_current_thread->privatization_buffer.buffer[0]) =    \
+      _val_;                                                                   \
+  *((_type1_ *)&g_imt_priv_current_thread->privatization_buffer.buffer[1]) =   \
+      _val1_;                                                                  \
+  *((_type2_ *)&g_imt_priv_current_thread->privatization_buffer.buffer[2]) =   \
+      _val2_;                                                                  \
+  _CHECKPOINT();                                                               \
+  _arg_ =                                                                      \
+      *((_type_ *)&g_imt_priv_current_thread->privatization_buffer.buffer[0]); \
+  _arg1_ = *(                                                                  \
+      (_type1_ *)&g_imt_priv_current_thread->privatization_buffer.buffer[1]);  \
+  _arg2_ = *(                                                                  \
+      (_type2_ *)&g_imt_priv_current_thread->privatization_buffer.buffer[2]);
+#endif
 
 /**
  * Call this macro to perform return.
@@ -133,37 +197,7 @@
  * Typically used in a function having void return type, in order to perform
  * early return.
  */
-#define _return_void(_name_) return pthis;
-
-/**
- * Shim API called by the developer.
- */
-void CHECKPOINT();
-
-#define _CHECKPOINT()                                                          \
-  pthis->cur_line = __COUNTER__ + 1;                                           \
-  case __COUNTER__:
-
-#define _WR(_arg_, _val_)                                                      \
-  _CHECKPOINT();                                                               \
-  _arg_ = _val_;
-
-#if IMMORTALITY_MAX_THREAD_COUNT == 1
-#define _WR_SELF(_type_, _arg_, _val_)                                         \
-  extern privatization_buffer_t _imt_global_privatization_buffer;              \
-  _CHECKPOINT();                                                               \
-  *((_type_ *)&_imt_global_privatization_buffer.buffer) = _val_;               \
-  _CHECKPOINT();                                                               \
-  _arg_ = *((_type_ *)&_imt_global_privatization_buffer.buffer);
-#else
-#define _WR_SELF(_type_, _arg_, _val_)                                         \
-  _CHECKPOINT();                                                               \
-  *((_type_ *)&(g_imt_priv_current_thread->privatization_buffer.buffer)) =     \
-      _val_;                                                                   \
-  _CHECKPOINT();                                                               \
-  _arg_ =                                                                      \
-      *((_type_ *)&(g_imt_priv_current_thread->privatization_buffer.buffer));
-#endif
+#define _return_void(_name_) return &this;
 
 /**
  * Perform checkpoint and enter critical section.  We perform checkpoint before
@@ -282,13 +316,13 @@ void _imt_thread_init_multi(immortal_thread_t *thread, _immortal_thread_fn fn,
 /**
  * Wrap calls to immortal functions that have multiple instances with this macro
  */
-#define _call_multi(_name_, ...)                                               \
+#define _call_multi_fn(_name_, ...)                                            \
   extern immortal_function_metadata_t _name_##_immortal_function_metadata;     \
   extern immortal_function_t _name_##_immortal_function_instances[];           \
   _TAKE_IMMORTAL_FUNCTION_INSTANCE(&_name_##_immortal_function_metadata,       \
-                                   pthis->callee_id)                           \
-  _call_function(_name_, pthis->callee_id, ##__VA_ARGS__);                     \
+                                   (pthis->callee_id))                         \
+  _call_function(_name_, (pthis->callee_id), ##__VA_ARGS__);                   \
   _RELEASE_IMMORTAL_FUNCTION_INSTANCE(&_name_##_immortal_function_metadata,    \
-                                      pthis->callee_id)
+                                      (pthis->callee_id))
 
 #endif /* IMMORTALITY_THREAD_H_ */

@@ -2,8 +2,9 @@
  * \file linux/port.h
  * \brief Linux port - interface
  *
- * \copyright Copyright 2021 The ImmortalThreads authors. All rights reserved.
- * \license MIT License
+ * \copyright Copyright 2022 The ImmortalThreads authors. All rights reserved.
+ * \license MIT License. See accompanying file LICENSE.txt at
+ * https://github.com/tinysystems/ImmortalThreads/blob/main/LICENSE.txt
  */
 #ifndef IMMORTALITY_PORT_LINUX_H_
 #define IMMORTALITY_PORT_LINUX_H_

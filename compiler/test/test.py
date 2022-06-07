@@ -46,44 +46,82 @@ def test_tool(source_file_input, snapshot):
 
     source_file_dir = Path(source_file_input).absolute().parent
 
-    extra_args = []
-    try:
-        extra_args = (
-            Path(source_file_dir / "extra_args")
-            .read_text()
-            .replace("\r\n", "\n")
-            .split("\n")
-        )
-        extra_args = list(filter(None, extra_args))
-    except FileNotFoundError:
-        pass
+    # Walk up from the source file dir until the directory of this script and
+    # gather all the extra args in the extra_args files found along the way
+    extra_args_list = []
+    extra_args_dir = source_file_dir
+    while this_script_dir.parent != extra_args_dir:
+        try:
+            extra_args = (
+                Path(extra_args_dir / "extra_args")
+                .read_text()
+                .replace("\r\n", "\n")
+                .split("\n")
+            )
+            extra_args = list(filter(None, extra_args))
+            extra_args = [
+                arg.replace("${current_dir}", str(extra_args_dir))
+                for arg in extra_args
+            ]
+            extra_args_list.extend(extra_args)
+            print(extra_args_list)
+        except FileNotFoundError:
+            pass
+        extra_args_dir = extra_args_dir.parent
 
-    out = ""
-    with working_directory(source_file_dir):
-        command = [
-            initial_cwd / "immortalc",
-            source_file_input,
-            # Use initial_cwd as build path
-            "-p",
-            initial_cwd,
-            "--stdout",
-            "--force-output",
-        ] + extra_args
-        print(command)
-        # Call the immortalc from the directory where the source file is.
-        out = check_output(command)
+    extra_args_map = {"": []}
+    for extra_arg_line in extra_args_list:
+        split = extra_arg_line.split(":", 1)
+        config = ""
+        extra_arg = ""
+        if len(split) == 2:
+            config = split[0]
+            extra_arg = split[1]
+        elif len(split) == 1:
+            extra_arg = split[0]
+        else:
+            assert 0, "Impossible"
 
-    # Parse output of immortalc
-    file_content_map = {}
-    iter = transformed_file_regex.finditer(out.decode("utf-8"))
-    for (match, next_match) in pairwise(iter):
-        content_start = match.span()[1] + 1
-        content_end = next_match.span()[0] if next_match is not None else len(out)
-        content = out[content_start:content_end]
-        file_content_map[match.group(1)] = content
+        if config not in extra_args_map:
+            extra_args_map[config] = []
+        extra_args_map[config].append(extra_arg)
 
-    for file_path, content in file_content_map.items():
-        path = Path(file_path)
-        # Assert snapshot
-        snapshot.snapshot_dir = path.parent.absolute()
-        snapshot.assert_match(content, path.name)
+    print(extra_args_map)
+    for config in extra_args_map:
+        infix = "immortal"
+        extra_args = extra_args_map[""]
+        if config != "":
+            infix = f"{config}.immortal"
+            extra_args.extend(extra_args_map[config])
+
+        out = ""
+        with working_directory(source_file_dir):
+            command = [
+                initial_cwd / "immortalc",
+                source_file_input,
+                # Use initial_cwd as build path
+                "-p",
+                initial_cwd,
+                "--stdout",
+                "--infix",
+                infix,
+                "--force-output",
+            ] + extra_args
+            print(command)
+            # Call the immortalc from the directory where the source file is.
+            out = check_output(command)
+
+        # Parse output of immortalc
+        file_content_map = {}
+        iter = transformed_file_regex.finditer(out.decode("utf-8"))
+        for (match, next_match) in pairwise(iter):
+            content_start = match.span()[1] + 1
+            content_end = next_match.span()[0] if next_match is not None else len(out)
+            content = out[content_start:content_end]
+            file_content_map[match.group(1)] = content
+
+        for file_path, content in file_content_map.items():
+            path = Path(file_path)
+            # Assert snapshot
+            snapshot.snapshot_dir = path.parent.absolute()
+            snapshot.assert_match(content, path.name)

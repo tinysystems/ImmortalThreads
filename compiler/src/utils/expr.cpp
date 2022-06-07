@@ -2,8 +2,9 @@
  * \file expr.cpp
  * \brief Common utility related to expressions - implementation
  *
- * \copyright Copyright 2021 The ImmortalThreads authors. All rights reserved.
- * \license MIT License
+ * \copyright Copyright 2022 The ImmortalThreads authors. All rights reserved.
+ * \license MIT License. See accompanying file LICENSE.txt at
+ * https://github.com/tinysystems/ImmortalThreads/blob/main/LICENSE.txt
  */
 #include "expr.hpp"
 
@@ -83,6 +84,15 @@ clang::QualType get_type_of_the_expression(const clang::Expr *e) {
     return expr->getCalleeDecl()->getFunctionType()->getReturnType();
   }
   assert(false && "Unexpected expression");
+}
+
+bool is_pointer_dereference_lvalue(const clang::Expr *e) {
+  if (auto *op = dyn_cast<UnaryOperator>(e)) {
+    if (op->getOpcode() == UnaryOperatorKind::UO_Deref) {
+      return true;
+    }
+  }
+  return false;
 }
 
 } // namespace imtc::utils
